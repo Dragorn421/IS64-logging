@@ -5,6 +5,10 @@ Scripts for viewing the IS64 logs using [Project64](https://www.pj64-emu.com/).
 
 This was released in the public domain with permission from LuigiBlood.
 
+[Instructions on how to setup/use](#instructions)
+
+![](instructions/windows_terminal_cmd_client_logs.png)
+
 I modified the original script because the `euc-jp` encoding that OoT64 uses was giving me trouble. I moved decoding data from the Project64 server script to a Python client script.
 
 Consider changing `euc-jp` to whatever you need for other games in [IS64Log_DebugClient_Raw.py](IS64Log_DebugClient_Raw.py).
