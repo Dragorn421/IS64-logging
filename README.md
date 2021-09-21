@@ -11,7 +11,7 @@ This was released into the public domain with permission from LuigiBlood and Ken
 
 I modified the original script because the `euc-jp` encoding that OoT64 uses was giving me trouble. I moved decoding data from the Project64 server script to a Python client script.
 
-Consider changing `euc-jp` to whatever you need for other games in [IS64Log_DebugClient_Raw.py](IS64Log_DebugClient_Raw.py).
+The script has command-line arguments. Use `--help` to show details.
 
 # Instructions
 
@@ -74,7 +74,7 @@ If you have Blender installed, you can probably use its python executable (for e
 
 Run [IS64Log_DebugClient_Raw.py](IS64Log_DebugClient_Raw.py), by drag&dropping onto the `python` executable, or associate the `.py` extension.
 
-If you want to run [IS64Log_DebugClient_Raw.py](IS64Log_DebugClient_Raw.py) in [WSL](https://docs.microsoft.com/en-us/windows/wsl/), you need to change the ip address in the script from `127.0.0.1` to your [local ip address](https://www.ipconfig.in/what-is-my-local-ip-address/) (for example `192.168.1.20`).
+If you want to run [IS64Log_DebugClient_Raw.py](IS64Log_DebugClient_Raw.py) in [WSL](https://docs.microsoft.com/en-us/windows/wsl/), you need to use your [local ip address](https://www.ipconfig.in/what-is-my-local-ip-address/), for example `192.168.1.20`. You can do so on the command line with `--server-host 192.168.1.20`.
 
 The only way I know of to have proper display of japanese characters is to use [Windows Terminal](https://docs.microsoft.com/en-us/windows/terminal/) with: the basic command interpreter, Powershell, or a WSL shell.
 
