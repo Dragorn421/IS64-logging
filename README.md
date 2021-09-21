@@ -11,7 +11,9 @@ This was released into the public domain with permission from LuigiBlood and Ken
 
 I modified the original script because the `euc-jp` encoding that OoT64 uses was giving me trouble. I moved decoding data from the Project64 server script to a Python client script.
 
-The script has command-line arguments. Use `--help` to show details.
+The Python client script has command-line arguments. Use `--help` to show details.
+
+Unless the Python client script is passed `--no-persist`, it will try to reconnect to the server after the connection was closed (for example when restarting the emulator).
 
 # Instructions
 
