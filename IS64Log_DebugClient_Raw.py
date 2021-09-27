@@ -59,9 +59,16 @@ parser.add_argument(
     "--write-raw",
     type=str,
     default=None,
+    metavar="FILE",
     help="Write raw data (no decoding/encoding done) to a file",
 )
-parser.add_argument("--write", type=str, default=None, help="Write logs to a file")
+parser.add_argument(
+    "--write",
+    type=str,
+    default=None,
+    metavar="FILE",
+    help="Write logs to a file",
+)
 parser.add_argument(
     "--encoding-in",
     type=str,
