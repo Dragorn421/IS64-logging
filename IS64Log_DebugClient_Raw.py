@@ -9,6 +9,7 @@ def terminate(*args):
     if args:
         print(*args)
     input("Press enter to exit...")
+    sys.exit()
 
 
 # Wrapping sys.excepthook:
