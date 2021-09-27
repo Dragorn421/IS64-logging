@@ -15,6 +15,8 @@ The Python client script has command-line arguments. Use `--help` to show detail
 
 Unless the Python client script is passed `--no-persist`, it will try to reconnect to the server after the connection was closed (for example when restarting the emulator).
 
+If you are running into any kind of issue getting the Python client script to work, try running with `--verbose`. It should help understanding what is happening.
+
 # Instructions
 
 These screenshots were made with a fresh [Project64 3.0.1](https://www.pj64-emu.com/download/project64-3-0-1-installer) install, but this has worked for many previous Project64 versions. Parts of the menu may be a bit different depending on your version.
