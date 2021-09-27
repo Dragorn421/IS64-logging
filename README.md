@@ -78,7 +78,7 @@ Run [IS64Log_DebugClient_Raw.py](IS64Log_DebugClient_Raw.py), by drag&dropping o
 
 If you want to run [IS64Log_DebugClient_Raw.py](IS64Log_DebugClient_Raw.py) in [WSL](https://docs.microsoft.com/en-us/windows/wsl/), you need to use your [local ip address](https://www.ipconfig.in/what-is-my-local-ip-address/), for example `192.168.1.20`. You can do so on the command line with `--server-host 192.168.1.20`.
 
-The only way I know of to have proper display of japanese characters is to use [Windows Terminal](https://docs.microsoft.com/en-us/windows/terminal/) with: the basic command interpreter, Powershell, or a WSL shell.
+You can get colors and proper display of japanese characters [like this](instructions/windows_terminal_cmd_client_logs.png), by using for example [Windows Terminal](https://docs.microsoft.com/en-us/windows/terminal/) with: the basic command interpreter, Powershell, or a WSL shell.
 
 ## Use interpreter
 
