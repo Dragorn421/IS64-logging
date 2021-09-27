@@ -12,6 +12,12 @@ def terminate(*args):
     sys.exit()
 
 
+def detect_in_wsl():
+    from platform import release
+
+    return "microsoft" in release().lower()
+
+
 # Wrapping sys.excepthook:
 # In case an error happens and the script wasn't run from a terminal,
 # waiting for input prevents the window from closing immediately
@@ -114,10 +120,13 @@ def receive_logs_persist():
         except socket.timeout as e:
             trace(e)
         except ConnectionRefusedError as e:
-            print(e)
-            print(
-                "If you are using WSL, you may need to pass your local ip address with --server-host"
-            )
+            if detect_in_wsl():
+                print(e)
+                print(
+                    "It looks like you are using WSL, you may need to pass your local ip address with --server-host"
+                )
+            else:
+                trace(e)
         except ConnectionError as e:
             print(e)
         else:
