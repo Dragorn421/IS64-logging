@@ -94,7 +94,7 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 			fxn = fxn.bind(this);
 			this.socket.on('close', fxn);
 		} else {
-			newSocket.write('Server only allows one connection at a time.', function (data) { });
+			newSocket.write(this.encodeRaw(this.stringToBytes("Server only allows one connection at a time.\n")) + "256,", function (data) { });
 			newSocket.close();
 		}
 	};

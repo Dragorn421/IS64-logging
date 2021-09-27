@@ -181,7 +181,8 @@ def receive_data_write_files(s):
 def receive_data(s, raw_out=None, out=None):
     dec_in = codec_info_in.incrementaldecoder()
     dataStr = ""
-    while True:
+    continue_loop = True
+    while continue_loop:
         try:
             dataStrBytes = s.recv(4096)
         except ConnectionResetError as e:
@@ -211,17 +212,24 @@ def receive_data(s, raw_out=None, out=None):
             print("Make sure you are using the right server script!")
             terminate()
 
-        try:
-            data = bytes(int(byteStr) for byteStr in bytesStr[:-1])  # = [1, 2, 3]
-        except ValueError as e:
-            trace(e)
-            print(
-                "Expected all of these strings to be base 10 integers, but at least one is not:"
-            )
-            print(bytesStr)
-            print("Make sure you are using the right server script!")
-            terminate()
-        trace("data =", data)
+        data = bytearray(len(bytesStr) - 1)
+        for i, byteStr in enumerate(bytesStr[:-1]):
+            try:
+                v = int(byteStr)
+            except ValueError as e:
+                trace(e)
+                print("Expected all of these strings to be base 10 integers:")
+                print(bytesStr)
+                print("But at least", repr(byteStr), "is not")
+                print("Make sure you are using the right server script!")
+                terminate()
+            if v == 256:
+                trace("Received 256, discarding", bytesStr[i:-1], "and ending loop")
+                data = data[:i]
+                continue_loop = False
+                break
+            data[i] = v
+        trace("data =", data)  # = [1, 2, 3]
 
         if raw_out is not None:
             raw_out(data)
