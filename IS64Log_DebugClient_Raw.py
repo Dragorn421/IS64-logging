@@ -112,7 +112,13 @@ else:
 def receive_logs_persist():
     print("Waiting to connect...")
     last_attempt_duration = None
+    attempts_count = 0
+    show_attempt_count = True
     while True:
+        attempts_count += 1
+        if show_attempt_count:
+            print("\r", end="")
+            print("Attempt {}... ".format(attempts_count), end="")
         trace("last_attempt_duration =", last_attempt_duration)
         # limit connection attempts to once per 5 seconds
         if last_attempt_duration is not None and last_attempt_duration < 5:
@@ -122,10 +128,12 @@ def receive_logs_persist():
         # retry every 5 seconds
         # (for some reason retrying helps the connection to be established?)
         s.settimeout(5.0)
+        is_silent_fail = False
         try:
             s.connect(server_address)
         except socket.timeout as e:
             trace(e)
+            is_silent_fail = True
         except ConnectionRefusedError as e:
             if detect_in_wsl():
                 print(e)
@@ -134,14 +142,17 @@ def receive_logs_persist():
                 )
             else:
                 trace(e)
+                is_silent_fail = True
         except ConnectionError as e:
             print(e)
         else:
             print("Connected!")
+            attempts_count = 0
             # put socket back in blocking mode
             s.settimeout(None)
             receive_data_write_files(s)
         last_attempt_duration = time.time() - last_attempt_start
+        show_attempt_count = is_silent_fail
 
 
 def receive_logs_once():
