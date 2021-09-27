@@ -187,6 +187,11 @@ def receive_data(s, raw_out=None, out=None):
         except ConnectionResetError as e:
             print(e)
             return
+
+        if not dataStrBytes:
+            time.sleep(0.1)
+            continue
+
         trace("dataStrBytes =", dataStrBytes)
         # encoding doesn't matter as long as it includes ASCII, only sending numbers and commas
         dataStr += dataStrBytes.decode("utf-8")  # += "1,2,3,"
@@ -234,6 +239,7 @@ def receive_data(s, raw_out=None, out=None):
             out(text)
 
         sys.stdout.write(text)
+        sys.stdout.flush()
 
 
 try:
