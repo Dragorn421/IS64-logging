@@ -178,7 +178,27 @@ def receive_data(s, raw_out=None, out=None):
         trace("bytesStr =", bytesStr)
         dataStr = bytesStr[-1]  # = ""
         trace("dataStr =", dataStr)
-        data = bytes(int(byteStr) for byteStr in bytesStr[:-1])  # = [1, 2, 3]
+
+        # dataStr may only be a (possibly partial) integer in 0-255 range, without a trailing comma
+        # e.g. "0", "5", "42", "255"
+        if len(dataStr) > 3:
+            print(
+                "Expected the server to send comma-separated integers (like '1,2,3'), instead getting:"
+            )
+            print(dataStr)
+            print("Make sure you are using the right server script!")
+            terminate()
+
+        try:
+            data = bytes(int(byteStr) for byteStr in bytesStr[:-1])  # = [1, 2, 3]
+        except ValueError as e:
+            trace(e)
+            print(
+                "Expected all of these strings to be base 10 integers, but at least one is not:"
+            )
+            print(bytesStr)
+            print("Make sure you are using the right server script!")
+            terminate()
         trace("data =", data)
 
         if raw_out is not None:
