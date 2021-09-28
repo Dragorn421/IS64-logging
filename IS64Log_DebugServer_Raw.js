@@ -1,4 +1,9 @@
-//IS-Viewer 64 Message Register Emulation script by LuigiBlood & Kenix
+/*
+ * This is free and unencumbered software released into the public domain.
+ * For more information, please refer to the LICENSE file or <http://unlicense.org/>
+ */
+
+// IS-Viewer 64 Message Register Emulation script by LuigiBlood, Kenix, Dragorn421
 
 console.log("IS-Viewer (Debug Server)");
 
