@@ -103,39 +103,50 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 		this.returnReg = this.getStoreOp();
 		this.returnData = 0;
 		if (addr == this.chkAddr) {
-			this.returnData = this.chkReg;
+			// Enables the game writing to the buffer
+			this.returnData = this.MAGIC_CHECK;
 		} else if (addr == this.getAddr) {
-			this.returnData = this.getReg;
+			this.returnData = 0;
 		} else if (addr == this.putAddr) {
-			this.returnData = this.putReg;
+			// Make the game write from the start of the buffer
+			// (but it doesn't matter, see onMemoryWrite)
+			// What matters is that the get and put values are the same,
+			// so unless the string the game is trying to write is larger than the buffer,
+			// the game will never give up writing data when checking intersection with the get-put range
+			this.returnData = 0;
 		}
 		var fxn = this.readCartReg;
 		fxn = fxn.bind(this);
 		this.callback = events.onexec((gpr.pc + 4), fxn);
 	};
 
-	this.onRegisterWrite = function (addr) {
-		this.returnReg = this.getStoreOp();
-		if (addr == this.chkAddr) {
-			this.chkReg = this.getStoreOpValue();
-		} else if (addr == this.getAddr) {
-			this.getReg = this.getStoreOpValue();
-		} else if (addr == this.putAddr) {
-			//Handle this output
-			this.outputString(this.putReg, this.getStoreOpValue());
-			this.putReg = this.getStoreOpValue();
+	this.onRegPutWrite = function (addr) {
+		// Whether if the message should be sent to the client
+		var flush = false;
+		// Append buffer contents to bufferStr similarly to encodeRaw
+		for (var i = 0; i < this.bufferNext; i++) {
+			this.bufferStr += this.buffer[i] + ',';
+			// if line return (\n)
+			if (this.buffer[i] == 10)
+				flush = true;
+		}
+		this.bufferNext = 0;
+		if (flush)
+		{
+			// socket.write happens to be really slow, so we avoid calling it too often by waiting for a line return
+			if (this.socket != null)
+				this.socket.write(this.bufferStr, function (data) { });
+			this.bufferStr = '';
 		}
 	};
 
 	this.onMemoryRead = function (addr) {
 		// Game will use osPiRead at all times so it's 32-bit aligned
+		// We "return" 0 explicitly to make sure we can find the
+		// modified byte in onMemoryWrite when the game writes back
 
 		this.returnReg = this.getStoreOp();
-		var offset = addr - this.msgBufAddressRange.start;
-		this.returnData = ((this.msgBuf[offset + 0] & 0xFF) << 24);
-		this.returnData |= ((this.msgBuf[offset + 1] & 0xFF) << 16);
-		this.returnData |= ((this.msgBuf[offset + 2] & 0xFF) << 8);
-		this.returnData |= ((this.msgBuf[offset + 3] & 0xFF) << 0);
+		this.returnData = 0;
 
 		var fxn = this.readCartReg;
 		fxn = fxn.bind(this);
@@ -145,13 +156,43 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 	this.onMemoryWrite = function (addr) {
 		// Game will use osPiRead at all times so it's 32-bit aligned
 
-		this.returnReg = this.getStoreOp();
-		var offset = addr - this.msgBufAddressRange.start;
-		var datamsg = this.getStoreOpValue();
-		this.msgBuf[offset + 0] = ((datamsg >> 24) & 0xFF);
-		this.msgBuf[offset + 1] = ((datamsg >> 16) & 0xFF);
-		this.msgBuf[offset + 2] = ((datamsg >> 8) & 0xFF);
-		this.msgBuf[offset + 3] = ((datamsg >> 0) & 0xFF);
+		var data = this.getStoreOpValue();
+
+		// The game or's (|) the byte it wants to write with the current data word at the address.
+		// 0 is provided as "current data" by onMemoryRead, so this looks for a non-0 byte.
+		var b;
+
+		// Note that this relies on the memory writes happening in order.
+		// The address being written to is not used.
+
+		b = (data >> 24) & 0xFF;
+		if (b != 0)
+		{
+			this.buffer[this.bufferNext] = b;
+			this.bufferNext++;
+			return;
+		}
+
+		b = (data >> 16) & 0xFF;
+		if (b != 0)
+		{
+			this.buffer[this.bufferNext] = b;
+			this.bufferNext++;
+			return;
+		}
+
+		b = (data >> 8) & 0xFF;
+		if (b != 0)
+		{
+			this.buffer[this.bufferNext] = b;
+			this.bufferNext++;
+			return;
+		}
+
+		// The game never writes a 0 so (data & 0xFF) should be non-0 at this point,
+		// but even if it is 0 it isn't a big deal.
+		this.buffer[this.bufferNext] = data & 0xFF;
+		this.bufferNext++;
 	};
 
 	this.initNetwork = function () {
@@ -171,10 +212,10 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 		fxn = fxn.bind(this);
 		events.onread(this.registerAddressRange, fxn);
 
-		// Register Write Event
-		var fxn = this.onRegisterWrite;
+		// Put Register Write Event
+		var fxn = this.onRegPutWrite;
 		fxn = fxn.bind(this);
-		events.onwrite(this.registerAddressRange, fxn);
+		events.onwrite(this.putAddr, fxn);
 
 		// Memory Read Event
 		var fxn = this.onMemoryRead;
@@ -201,14 +242,6 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 	// Memory Address Range
 	this.msgBufAddressRange = msgBufAddressRange;
 
-	// Initialize Device registers
-	this.chkReg = this.MAGIC_CHECK;
-	this.getReg = 0;
-	this.putReg = 0;
-
-	// Initialize Device memory
-	this.msgBuf = new Array(this.msgBufAddressRange.end - this.msgBufAddressRange.start);
-
 	// Initialize variables to communicate with PJ64
 	this.returnData = 0;
 	this.returnReg = 0;
@@ -223,6 +256,10 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 	this.initDeviceHooks();
 	// Initialize network component
 	this.initNetwork();
+
+	this.buffer = new Array(0x10000);
+	this.bufferNext = 0; // next index to write at in buffer
+	this.bufferStr = '';
 
 	console.log("chkAddr: " + this.chkAddr.hex());
 	console.log("getAddr: " + this.getAddr.hex());
