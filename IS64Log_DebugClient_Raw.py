@@ -171,12 +171,14 @@ def receive_data_write_files(s):
     try:
         if raw_out_file is not None:
             raw_out_f = open(raw_out_file, "wb")
+
             def raw_out(data):
                 raw_out_f.write(data)
                 raw_out_f.flush()
 
         if out_file is not None:
             out_f = open(out_file, "w")
+
             def out(data):
                 out_f.write(data)
                 out_f.flush()

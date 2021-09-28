@@ -2,7 +2,6 @@
 
 console.log("IS-Viewer (Debug Server)");
 
-//const _IS_MSGBUFFER_AD =  0xb1ff0000;
 const _IS_MSGBUFFER_AD = 0xb3ff0000;
 const _IS_MSGBUFFER_LEN = 0x10000;
 const _IS_MSGBUF_HEADLEN = 0x20;
@@ -11,7 +10,6 @@ const _IS_MSGBUF_CHKAD = _IS_MSGBUFFER_AD + 0x00;
 const _IS_MSGBUF_GETPT = _IS_MSGBUFFER_AD + 0x04;
 const _IS_MSGBUF_PUTPT = _IS_MSGBUFFER_AD + 0x14;
 const _IS_MSGBUF_MSGTOP = _IS_MSGBUFFER_AD + _IS_MSGBUF_HEADLEN;
-const _IS_MSGBUF_MSGLEN = _IS_MSGBUF_HEADLEN - _IS_MSGBUF_HEADLEN;
 
 const ADDR_IS64_REG = new AddressRange(_IS_MSGBUFFER_AD, _IS_MSGBUF_MSGTOP - 1);
 const ADDR_IS64_MSG = new AddressRange(_IS_MSGBUF_MSGTOP, _IS_MSGBUFFER_AD_END - 1);
@@ -33,35 +31,24 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 		return gpr[tReg];
 	}
 
+	// used as a callback when an instruction reads from the IS64 address range (registers and buffer),
+	// to set the appropriate register to the appropriate value
 	this.readCartReg = function () {
 		gpr[this.returnReg] = this.returnData;
 		events.remove(this.callback);
 	}
 
-	this.emptyMsg = function () {
-		for (var i = 0; i < this.msgBuf.length; i++) {
-			this.msgBuf[i] = 0;
-		}
-	}
-
+	// for now, a limitation of sockets provided by the PJ64 script api is they only allow transfering strings, not byte arrays
+	// this transforms a byte array like [1,2,3] into a string like '1,2,3,'
 	this.encodeRaw = function (data) {
 		var str = '';
 		for (var i = 0; i < data.length; i++) {
-			str += data[i] + ','
+			str += data[i] + ',';
 		}
 		return str;
 	}
 
-	this.outputString = function (start, end) {
-		var slice = start < end ?
-			this.msgBuf.slice(start, end) :
-			this.msgBuf.slice(start, this.msgBuf.length).concat(this.msgBuf.slice(0, end));
-
-		if (this.socket != null) {
-			this.socket.write(this.encodeRaw(slice), function (data) { });
-		}
-	}
-
+	// 'ABC' -> [65,66,67]
 	this.stringToBytes = function (str) {
 		var data = new Array(str.length);
 		for (var i = 0; i < str.length; i++) {
@@ -115,6 +102,7 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 			// the game will never give up writing data when checking intersection with the get-put range
 			this.returnData = 0;
 		}
+
 		var fxn = this.readCartReg;
 		fxn = fxn.bind(this);
 		this.callback = events.onexec((gpr.pc + 4), fxn);
@@ -229,7 +217,7 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 	}
 
 	// Magic number used to verify communication
-	this.MAGIC_CHECK = 0x49533634; // IS64
+	this.MAGIC_CHECK = 0x49533634; // ASCII for "IS64"
 
 	// Hardware addresses used to communicate with this device.
 	this.chkAddr = chkAddr;
