@@ -21,6 +21,11 @@ def detect_in_wsl():
     return "microsoft" in release().lower()
 
 
+def reset_formatting():
+    # ESC[m (reset ANSI escape code)
+    print("\x9Bm", end="")
+
+
 # Wrapping sys.excepthook:
 # In case an error happens and the script wasn't run from a terminal,
 # waiting for input prevents the window from closing immediately
@@ -202,6 +207,7 @@ def receive_data(s, raw_out=None, out=None):
         try:
             dataStrBytes = s.recv(4096)
         except ConnectionResetError as e:
+            reset_formatting()
             print(e)
             return
 
@@ -221,6 +227,7 @@ def receive_data(s, raw_out=None, out=None):
         # dataStr may only be a (possibly partial) integer in 0-255 range, without a trailing comma
         # e.g. "0", "5", "42", "255"
         if len(dataStr) > 3:
+            reset_formatting()
             print(
                 "Expected the server to send comma-separated integers (like '1,2,3'), instead getting:"
             )
@@ -234,6 +241,7 @@ def receive_data(s, raw_out=None, out=None):
                 v = int(byteStr)
             except ValueError as e:
                 trace(e)
+                reset_formatting()
                 print("Expected all of these strings to be base 10 integers:")
                 print(bytesStr)
                 print("But at least", repr(byteStr), "is not")
@@ -255,6 +263,7 @@ def receive_data(s, raw_out=None, out=None):
         except ValueError as e:  # decoding error
             # FIXME this resets the decoder state so some of the buffer may be lost.
             # at least it doesn't break the script I guess
+            reset_formatting()
             print("Decoding error")
             print(e)
             continue
@@ -272,4 +281,5 @@ try:
     else:
         receive_logs_once()
 except KeyboardInterrupt:
+    reset_formatting()
     print()
