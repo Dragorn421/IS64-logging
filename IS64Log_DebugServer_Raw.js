@@ -5,6 +5,21 @@
 
 // IS-Viewer 64 Message Register Emulation script by LuigiBlood, Kenix, Dragorn421
 
+
+if (typeof PJ64_JSAPI_VERSION === 'undefined') {
+	var PJ64_JSAPI_VERSION = "jsapi-1";
+}
+
+const KNOWN_PJ64_JSAPI_VERSIONS = ["jsapi-1"];
+
+if (KNOWN_PJ64_JSAPI_VERSIONS.indexOf(PJ64_JSAPI_VERSION) == -1) {
+
+	console.log("Unknown JS API version", PJ64_JSAPI_VERSION);
+	console.log("This script is not compatible with this version of Project64.");
+	console.log("You may need to upgrade this script, or downgrade Project64.");
+
+} else { // known PJ64_JSAPI_VERSION
+
 console.log("IS-Viewer (Debug Server)");
 
 const _IS_MSGBUFFER_AD = 0xb3ff0000;
@@ -260,3 +275,5 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 	console.log("registerAddressRange: " + this.registerAddressRange.start.hex() + " - " + this.registerAddressRange.end.hex());
 	console.log("msgBufAddressRange: " + this.msgBufAddressRange.start.hex() + " - " + this.msgBufAddressRange.end.hex());
 }
+
+} // end known PJ64_JSAPI_VERSION
