@@ -34,7 +34,7 @@ const _IS_MSGBUF_MSGTOP = _IS_MSGBUFFER_AD + _IS_MSGBUF_HEADLEN;
 const ADDR_IS64_REG = new AddressRange(_IS_MSGBUFFER_AD, _IS_MSGBUF_MSGTOP - 1);
 const ADDR_IS64_MSG = new AddressRange(_IS_MSGBUF_MSGTOP, _IS_MSGBUFFER_AD_END - 1);
 
-var dev = new IS64Device(411, _IS_MSGBUF_CHKAD, _IS_MSGBUF_GETPT, _IS_MSGBUF_PUTPT, ADDR_IS64_REG, ADDR_IS64_MSG);
+var dev = new IS64Device(41111, _IS_MSGBUF_CHKAD, _IS_MSGBUF_GETPT, _IS_MSGBUF_PUTPT, ADDR_IS64_REG, ADDR_IS64_MSG);
 
 function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBufAddressRange) {
 

@@ -53,7 +53,7 @@ parser.add_argument(
 parser.add_argument(
     "--server_port",
     type=int,
-    default=411,
+    default=41111,
     help="Server port to connect to",
 )
 parser.add_argument(
