@@ -10,7 +10,7 @@ if (typeof PJ64_JSAPI_VERSION === 'undefined') {
 	var PJ64_JSAPI_VERSION = "jsapi-1";
 }
 
-const KNOWN_PJ64_JSAPI_VERSIONS = ["jsapi-1"];
+const KNOWN_PJ64_JSAPI_VERSIONS = ["jsapi-1", "jsapi-2"];
 
 if (KNOWN_PJ64_JSAPI_VERSIONS.indexOf(PJ64_JSAPI_VERSION) == -1) {
 
@@ -37,25 +37,30 @@ const ADDR_IS64_MSG = new AddressRange(_IS_MSGBUF_MSGTOP, _IS_MSGBUFFER_AD_END -
 var dev = new IS64Device(411, _IS_MSGBUF_CHKAD, _IS_MSGBUF_GETPT, _IS_MSGBUF_PUTPT, ADDR_IS64_REG, ADDR_IS64_MSG);
 
 function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBufAddressRange) {
-	this.getStoreOp = function () {
-		// hacky way to get value that SW will write
-		var pcOpcode = mem.u32[gpr.pc];
-		var tReg = (pcOpcode >> 16) & 0x1F;
-		return tReg;
-	}
 
-	this.getStoreOpValue = function () {
-		// hacky way to get value that SW will write
-		var pcOpcode = mem.u32[gpr.pc];
-		var tReg = (pcOpcode >> 16) & 0x1F;
-		return gpr[tReg];
-	}
+	if (PJ64_JSAPI_VERSION == "jsapi-1") {
 
-	// used as a callback when an instruction reads from the IS64 address range (registers and buffer),
-	// to set the appropriate register to the appropriate value
-	this.readCartReg = function () {
-		gpr[this.returnReg] = this.returnData;
-		events.remove(this.callback);
+		this.getStoreOp = function () {
+			// hacky way to get value that SW will write
+			var pcOpcode = mem.u32[gpr.pc];
+			var tReg = (pcOpcode >> 16) & 0x1F;
+			return tReg;
+		}
+
+		this.getStoreOpValue = function () {
+			// hacky way to get value that SW will write
+			var pcOpcode = mem.u32[gpr.pc];
+			var tReg = (pcOpcode >> 16) & 0x1F;
+			return gpr[tReg];
+		}
+
+		// used as a callback when an instruction reads from the IS64 address range (registers and buffer),
+		// to set the appropriate register to the appropriate value
+		this.readCartReg = function () {
+			gpr[this.returnReg] = this.returnData;
+			events.remove(this.callback);
+		}
+
 	}
 
 	// for now, a limitation of sockets provided by the PJ64 script api is they only allow transfering strings, not byte arrays
@@ -106,8 +111,16 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 		}
 	};
 
-	this.onRegisterRead = function (addr) {
-		this.returnReg = this.getStoreOp();
+	this.onRegisterRead = function (arg) {
+		if (PJ64_JSAPI_VERSION == "jsapi-1") {
+			var addr = arg;
+			this.returnReg = this.getStoreOp();
+		} else {
+			var e = arg;
+			var addr = e.address;
+			this.returnReg = e.reg;
+		}
+
 		this.returnData = 0;
 		if (addr == this.chkAddr) {
 			// Enables the game writing to the buffer
@@ -123,12 +136,17 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 			this.returnData = 0;
 		}
 
-		var fxn = this.readCartReg;
-		fxn = fxn.bind(this);
-		this.callback = events.onexec((gpr.pc + 4), fxn);
+		if (PJ64_JSAPI_VERSION == "jsapi-1") {
+			var fxn = this.readCartReg;
+			fxn = fxn.bind(this);
+			this.callback = events.onexec((gpr.pc + 4), fxn);
+		} else {
+			cpu.gpr[this.returnReg] = this.returnData;
+			debug.skip();
+		}
 	};
 
-	this.onRegPutWrite = function (addr) {
+	this.onRegPutWrite = function (arg) {
 		// Whether if the message should be sent to the client
 		var flush = false;
 		// Append buffer contents to bufferStr similarly to encodeRaw
@@ -148,23 +166,39 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 		}
 	};
 
-	this.onMemoryRead = function (addr) {
+	this.onMemoryRead = function (arg) {
 		// Game will use osPiRead at all times so it's 32-bit aligned
 		// We "return" 0 explicitly to make sure we can find the
 		// modified byte in onMemoryWrite when the game writes back
 
-		this.returnReg = this.getStoreOp();
+		if (PJ64_JSAPI_VERSION == "jsapi-1") {
+			this.returnReg = this.getStoreOp();
+		} else {
+			var e = arg;
+			this.returnReg = e.reg;
+		}
+
 		this.returnData = 0;
 
-		var fxn = this.readCartReg;
-		fxn = fxn.bind(this);
-		this.callback = events.onexec((gpr.pc + 4), fxn);
+		if (PJ64_JSAPI_VERSION == "jsapi-1") {
+			var fxn = this.readCartReg;
+			fxn = fxn.bind(this);
+			this.callback = events.onexec((gpr.pc + 4), fxn);
+		} else {
+			cpu.gpr[this.returnReg] = this.returnData;
+			debug.skip();
+		}
 	};
 
-	this.onMemoryWrite = function (addr) {
+	this.onMemoryWrite = function (arg) {
 		// Game will use osPiRead at all times so it's 32-bit aligned
 
-		var data = this.getStoreOpValue();
+		if (PJ64_JSAPI_VERSION == "jsapi-1") {
+			var data = this.getStoreOpValue();
+		} else {
+			var e = arg;
+			var data = e.value;
+		}
 
 		// The game or's (|) the byte it wants to write with the current data word at the address.
 		// 0 is provided as "current data" by onMemoryRead, so this looks for a non-0 byte.
@@ -205,7 +239,13 @@ function IS64Device(port, chkAddr, getAddr, putAddr, registerAddressRange, msgBu
 
 	this.initNetwork = function () {
 		// Start Server
-		this.debugServer = new Server({ port: this.port });
+		if (PJ64_JSAPI_VERSION == "jsapi-1") {
+			this.debugServer = new Server({ port: this.port });
+		} else {
+			this.debugServer = new Server();
+			this.debugServer.listen(this.port, '127.0.0.1');
+		}
+		console.log("Listening on port", this.port)
 		this.socket = null;
 
 		// Bind Connection Listener
