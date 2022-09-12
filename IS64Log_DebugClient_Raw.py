@@ -87,6 +87,11 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--quiet",
+    action="store_true",
+    help="Don't print info messages, only received logs and errors",
+)
+parser.add_argument(
     "--verbose",
     action="store_true",
     help="Print a lot more stuff (for debugging)",
@@ -113,22 +118,30 @@ try:
 except LookupError:
     terminate("Unknown input encoding", args.encoding_in)
 
+
+noop = lambda *_0, **_1: ...
+
+if args.quiet:
+    info = noop
+else:
+    info = print
+
 if args.verbose:
     trace = print
 else:
-    trace = lambda *_: ...
+    trace = noop
 
 
 def receive_logs_persist():
-    print("Waiting to connect...")
+    info("Waiting to connect...")
     last_attempt_duration = None
     attempts_count = 0
     show_attempt_count = True
     while True:
         attempts_count += 1
         if show_attempt_count:
-            print("\r", end="")
-            print("Attempt {}... ".format(attempts_count), end="")
+            info("\r", end="")
+            info("Attempt {}... ".format(attempts_count), end="")
         trace("last_attempt_duration =", last_attempt_duration)
         # limit connection attempts to once per 5 seconds
         if last_attempt_duration is not None and last_attempt_duration < 5:
@@ -156,7 +169,7 @@ def receive_logs_persist():
         except ConnectionError as e:
             print(e)
         else:
-            print("Connected!")
+            info("Connected!")
             attempts_count = 0
             # put socket back in blocking mode
             s.settimeout(None)
@@ -166,10 +179,10 @@ def receive_logs_persist():
 
 
 def receive_logs_once():
-    print("Waiting to connect...")
+    info("Waiting to connect...")
     s = socket.socket()
     s.connect(server_address)
-    print("Connected!")
+    info("Connected!")
     receive_data_write_files(s)
 
 
